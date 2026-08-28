@@ -1,65 +1,65 @@
 class Solution:
-    def lexPalindromicPermutation(self, s, target):
+    def lexPalindromicPermutation(self, s: str, target: str) -> str:
         n = len(s)
+        # Special case: length of 1
+        if n == 1:
+            return s if s > target else ""
 
-        count = [0] * 26
+        # Count the frequency of each character
+        cnt = [0] * 26
+        for c in s:
+            cnt[ord(c) - ord("a")] += 1
 
-        for ch in s:
-            count[ord(ch) - ord('a')] += 1
-
-        # Check if a palindromic permutation is possible
-        odd = 0
-        middle = ""
-
+        # Check if it can form a palindrome and record the characters with odd occurrences
+        odd_char = ""
         for i in range(26):
-            if count[i] % 2:
-                odd += 1
-                middle = chr(ord('a') + i)
+            if cnt[i] % 2 == 1:
+                # More than one character appears an odd number of times, cannot form a palindrome
+                if odd_char != "":
+                    return ""
+                odd_char = chr(ord("a") + i)
+            cnt[
+                i
+            ] //= 2  # It takes only half the characters to construct the left half
 
-        if odd > 1:
-            return ""
+        prefix = []
 
-        # Build the left half
-        left = []
+        def check(c):
+            left = prefix.copy()
+            left.append(c)
+            for i in range(25, -1, -1):
+                left.extend([chr(ord("a") + i)] * cnt[i])
 
-        for i in range(26):
-            for _ in range(count[i] // 2):
-                left.append(chr(ord('a') + i))
+            palindrome = left + [odd_char] + left[::-1]
 
-        def make_palindrome(left):
-            left_str = ''.join(left)
+            return "".join(palindrome) > target
 
-            if n % 2:
-                return left_str + middle + left_str[::-1]
+        # Construct the left part of each digit greedily
+        for i in range(n // 2):
+            found = False
+            # Try to place the smallest character in lexicographical order
+            for j in range(26):
+                if cnt[j] == 0:
+                    continue
 
-            return left_str + left_str[::-1]
+                cnt[j] -= 1
+                if check(chr(ord("a") + j)):
+                    # If the constructed palindrome is greater than target, choose the character
+                    prefix.append(chr(ord("a") + j))
+                    found = True
+                    break
+                else:
+                    cnt[j] += 1  # Not meeting the conditions, reset the counter
+            if not found:
+                return ""  # Cannot construct a palindrome larger than target
 
-        # Smallest possible palindrome
-        candidate = make_palindrome(left)
+            if prefix[i] > target[i]:  # prefix is already greater than target
+                left = prefix[:]
+                for j in range(26):
+                    left.extend([chr(ord("a") + j)] * cnt[j])
+                palindrome = left + [odd_char] + left[::-1]
+                return "".join(palindrome)
 
-        if candidate > target:
-            return candidate
-
-        # Generate next permutations of the left half
-        while True:
-            i = len(left) - 2
-
-            while i >= 0 and left[i] >= left[i + 1]:
-                i -= 1
-
-            if i < 0:
-                return ""
-
-            j = len(left) - 1
-
-            while left[j] <= left[i]:
-                j -= 1
-
-            left[i], left[j] = left[j], left[i]
-
-            left[i + 1:] = left[i + 1:][::-1]
-
-            candidate = make_palindrome(left)
-
-            if candidate > target:
-                return candidate
+        # Construct the final palindrome string
+        ans = prefix + [odd_char] + prefix[::-1]
+        return "".join(ans)
