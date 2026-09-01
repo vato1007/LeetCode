@@ -2,75 +2,65 @@ from collections import deque
 
 class Solution:
     def minMoves(self, classroom, energy):
+        dx = [0, 1, 0, -1]
+        dy = [1, 0, -1, 0]
 
         m = len(classroom)
         n = len(classroom[0])
 
-        start = None
-        litter = {}
+        id = [[0] * n for _ in range(m)]
 
-        for r in range(m):
-            for c in range(n):
-                if classroom[r][c] == 'S':
-                    start = (r, c)
-                elif classroom[r][c] == 'L':
-                    litter[(r, c)] = len(litter)
+        sx = sy = 0
+        cnt = 0
 
-        k = len(litter)
+        for i in range(m):
+            for j in range(n):
+                if classroom[i][j] == "S":
+                    sx, sy = i, j
+                elif classroom[i][j] == "L":
+                    id[i][j] = 1 << cnt
+                    cnt += 1
 
-        if k == 0:
-            return 0
+        full = 1 << cnt
 
-        target = (1 << k) - 1
+        bestEnergy = [
+            [[-1 for _ in range(full)] for _ in range(n)]
+            for _ in range(m)
+        ]
+
+        bestEnergy[sx][sy][0] = energy
 
         q = deque()
-        q.append((start[0], start[1], 0, energy))
-
-        visited = set()
-        visited.add((start[0], start[1], 0, energy))
-
-        moves = 0
-
-        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        q.append((sx, sy, 0, energy, 0))
 
         while q:
+            x, y, mask, e, steps = q.popleft()
 
-            for _ in range(len(q)):
+            if mask == full - 1:
+                return steps
 
-                r, c, mask, e = q.popleft()
+            if e == 0:
+                continue
 
-                if mask == target:
-                    return moves
+            for d in range(4):
+                nx = x + dx[d]
+                ny = y + dy[d]
 
-                for dr, dc in directions:
+                if nx < 0 or nx >= m or ny < 0 or ny >= n:
+                    continue
 
-                    nr = r + dr
-                    nc = c + dc
+                if classroom[nx][ny] == "X":
+                    continue
 
-                    if nr < 0 or nr >= m or nc < 0 or nc >= n:
-                        continue
+                ne = e - 1
 
-                    if classroom[nr][nc] == 'X':
-                        continue
+                if classroom[nx][ny] == "R":
+                    ne = energy
 
-                    if e == 0:
-                        continue
+                nmask = mask | id[nx][ny]
 
-                    new_energy = e - 1
-                    new_mask = mask
-
-                    if (nr, nc) in litter:
-                        new_mask |= 1 << litter[(nr, nc)]
-
-                    if classroom[nr][nc] == 'R':
-                        new_energy = energy
-
-                    state = (nr, nc, new_mask, new_energy)
-
-                    if state not in visited:
-                        visited.add(state)
-                        q.append(state)
-
-            moves += 1
+                if ne > bestEnergy[nx][ny][nmask]:
+                    bestEnergy[nx][ny][nmask] = ne
+                    q.append((nx, ny, nmask, ne, steps + 1))
 
         return -1
